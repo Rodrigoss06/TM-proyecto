@@ -10,7 +10,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.proyectfaseii.R
 import com.example.proyectfaseii.data.models.Habito
 import com.example.proyectfaseii.data.firebase.FirestoreManager
+import com.example.proyectfaseii.ui.activities.DetalleHabitoActivity
 import com.example.proyectfaseii.ui.adapters.HabitsAdapter
+import com.example.proyectfaseii.ui.modals.CrearHabitoModal
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -51,23 +53,27 @@ class HabitsFragment : Fragment() {
         loadHabitsByFrequency(currentFilter)
 
         fabAddHabit.setOnClickListener {
-            Toast.makeText(requireContext(), "Crear hábito (pendiente)", Toast.LENGTH_SHORT).show()
-            // Ejemplo si tuvieras una activity:
-            // startActivity(Intent(requireContext(), CrearHabitoActivity::class.java))
+            val modal = CrearHabitoModal()
+            modal.show(parentFragmentManager, "CrearHabitoModal")
         }
+
+
     }
 
     private fun setupRecycler() {
         adapter = HabitsAdapter(
             habitsList,
             onReadMore = { habito ->
-                Toast.makeText(requireContext(), "Leer más: ${habito.name}", Toast.LENGTH_SHORT).show()
+                val intent = Intent(requireContext(), DetalleHabitoActivity::class.java)
+                intent.putExtra("habitoId", habito.id)
+                startActivity(intent)
             },
             onEdit = { habito ->
                 Toast.makeText(requireContext(), "Editar hábito: ${habito.name}", Toast.LENGTH_SHORT).show()
             },
             onArchive = { habito -> archiveHabit(habito) }
         )
+
         rvHabitsList.layoutManager = LinearLayoutManager(requireContext())
         rvHabitsList.adapter = adapter
     }

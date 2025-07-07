@@ -1,5 +1,6 @@
 package com.example.proyectfaseii.data.firebase
 
+import android.util.Log
 import com.example.proyectfaseii.data.models.*
 import com.example.proyectfaseii.utils.Utils
 import com.google.firebase.auth.FirebaseAuth
@@ -17,12 +18,32 @@ object FirestoreManager {
     private val userRef get() = db.collection("usuarios").document(uid)
 
     fun saveOrUpdateHabit(habito: Habito, callback: (Boolean) -> Unit) {
-        if (uid.isBlank()) return callback(false)
+        val userId = FirebaseAuth.getInstance().uid
+
+        if (userId.isNullOrBlank()) {
+            Log.e("FirestoreManager", "❌ UID está vacío. No se puede guardar el hábito.")
+            callback(false)
+            return
+        }
+
+        // 🔍 Log del objeto a guardar (usa Gson si quieres JSON)
+        Log.d("FirestoreManager", "✅ UID usado: $userId")
+        Log.d("FirestoreManager", "📤 Hábito a guardar: $habito")
+
+        val habitsRef = db.collection("usuarios").document(userId).collection("habitos")
+
         habitsRef.document(habito.id)
             .set(habito)
-            .addOnSuccessListener { callback(true) }
-            .addOnFailureListener { callback(false) }
+            .addOnSuccessListener {
+                Log.d("FirestoreManager", "✅ Hábito guardado correctamente: ${habito.id}")
+                callback(true)
+            }
+            .addOnFailureListener { e ->
+                Log.e("FirestoreManager", "❌ Error al guardar hábito: ${e.message}", e)
+                callback(false)
+            }
     }
+
 
     fun deleteHabit(habitId: String, callback: () -> Unit) {
         if (uid.isBlank()) return
