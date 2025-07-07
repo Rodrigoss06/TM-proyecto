@@ -1,98 +1,98 @@
 package com.example.proyectfaseii.ui.fragments
 
-import android.content.Intent
 import android.os.Bundle
-import android.view.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.proyectfaseii.R
-import com.example.proyectfaseii.data.api.RetrofitClient
 import com.example.proyectfaseii.data.models.Habito
-import com.example.proyectfaseii.ui.activities.AddHabitActivity
-import com.example.proyectfaseii.ui.activities.HabitDetailActivity
-import com.example.proyectfaseii.ui.adapters.HabitosAdapter
-import com.example.proyectfaseii.utils.SharedPrefManager
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import kotlinx.coroutines.launch
+import com.example.proyectfaseii.data.firebase.FirestoreManager
+import com.example.proyectfaseii.ui.adapters.DaySelectorAdapter
+import com.example.proyectfaseii.ui.adapters.HabitoTodayAdapter
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 class TodayFragment : Fragment() {
 
-    private lateinit var tvGreeting: TextView
-    private lateinit var tvCompletedCount: TextView
-    private lateinit var tvPendingCount: TextView
-    private lateinit var rvHabitos: RecyclerView
-    private lateinit var swipeRefresh: SwipeRefreshLayout
-    private lateinit var fabAddHabit: FloatingActionButton
-    private lateinit var adapter: HabitosAdapter
+    private lateinit var tvSelectedDate: TextView
+    private lateinit var rvDaySelector: RecyclerView
+    private lateinit var rvHabitsToday: RecyclerView
+    private lateinit var progressLoading: ProgressBar
+    private lateinit var tvEmptyState: TextView
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        val view = inflater.inflate(R.layout.fragment_today, container, false)
+    private lateinit var adapter: HabitoTodayAdapter
+    private var selectedDate: LocalDate = LocalDate.now()
+    private val habitsToday = mutableListOf<Habito>()
 
-        tvGreeting = view.findViewById(R.id.tvGreeting)
-        tvCompletedCount = view.findViewById(R.id.tvCompletedCount)
-        tvPendingCount = view.findViewById(R.id.tvPendingCount)
-        rvHabitos = view.findViewById(R.id.rvHabitos)
-        swipeRefresh = view.findViewById(R.id.swipeRefresh)
-        fabAddHabit = view.findViewById(R.id.fabAddHabit)
-
-        val prefs = SharedPrefManager.getInstance(requireContext())
-        val userName = prefs.getUserName() ?: "Usuario"
-        tvGreeting.text = getString(R.string.greeting, userName)
-
-        adapter = HabitosAdapter(emptyList()) { habit ->
-            val intent = Intent(requireContext(), HabitDetailActivity::class.java)
-            intent.putExtra("habit_id", habit.id)
-            intent.putExtra("habit_name", habit.name)
-            intent.putExtra("habit_category", habit.area?.name ?: "")
-            startActivity(intent)
-        }
-
-        rvHabitos.layoutManager = LinearLayoutManager(requireContext())
-        rvHabitos.adapter = adapter
-
-        swipeRefresh.setOnRefreshListener {
-            loadHabits()
-        }
-
-        fabAddHabit.setOnClickListener {
-            startActivity(Intent(requireContext(), AddHabitActivity::class.java))
-        }
-
-        loadHabits()
-
-        return view
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        return inflater.inflate(R.layout.fragment_today, container, false)
     }
 
-    private fun loadHabits() {
-        val userId = SharedPrefManager.getInstance(requireContext()).getUserId()
-        if (userId == null) {
-            Toast.makeText(context, "Usuario no identificado", Toast.LENGTH_LONG).show()
-            return
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        // Vistas
+        tvSelectedDate = view.findViewById(R.id.tv_selected_date)
+        rvDaySelector = view.findViewById(R.id.rv_day_selector)
+        rvHabitsToday = view.findViewById(R.id.rv_habits_today)
+        progressLoading = view.findViewById(R.id.progress_loading)
+        tvEmptyState = view.findViewById(R.id.tv_empty_state)
+
+        setupDaySelector()
+        setupRecycler()
+        loadHabitsForToday()
+    }
+
+    private fun setupDaySelector() {
+        val days = (0..6).map { LocalDate.now().minusDays(3).plusDays(it.toLong()) }
+        val dayAdapter = DaySelectorAdapter(days) { date ->
+            selectedDate = date
+            tvSelectedDate.text = date.format(DateTimeFormatter.ofPattern("EEEE d MMMM"))
+            loadHabitsForToday()
         }
 
-        swipeRefresh.isRefreshing = true
+        rvDaySelector.adapter = dayAdapter
+        rvDaySelector.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
 
-        lifecycleScope.launch {
-            try {
-                val response = RetrofitClient.apiService.obtenerHabitos(userId)
-                if (response.isSuccessful) {
-                    val list = response.body() ?: emptyList()
-                    adapter.updateData(list)
+        tvSelectedDate.text = selectedDate.format(DateTimeFormatter.ofPattern("EEEE d MMMM"))
+    }
 
-                    tvCompletedCount.text = "Completados: ${list.count { it.current_streak > 0 }}"
-                    tvPendingCount.text = "Pendientes: ${list.count { it.current_streak == 0 }}"
-                } else {
-                    Toast.makeText(context, "Error al obtener hábitos", Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(context, "Error de red", Toast.LENGTH_SHORT).show()
-            } finally {
-                swipeRefresh.isRefreshing = false
+    private fun setupRecycler() {
+        adapter = HabitoTodayAdapter(habitsToday) { habito ->
+            marcarComoCompletado(habito)
+        }
+        rvHabitsToday.layoutManager = LinearLayoutManager(requireContext())
+        rvHabitsToday.adapter = adapter
+    }
+
+    private fun loadHabitsForToday() {
+        progressLoading.visibility = View.VISIBLE
+        tvEmptyState.visibility = View.GONE
+
+        FirestoreManager.getHabitsForDay(selectedDate) { fetchedHabits ->
+            habitsToday.clear()
+            habitsToday.addAll(fetchedHabits)
+            adapter.notifyDataSetChanged()
+
+            progressLoading.visibility = View.GONE
+            tvEmptyState.visibility = if (habitsToday.isEmpty()) View.VISIBLE else View.GONE
+        }
+    }
+
+    private fun marcarComoCompletado(habito: Habito) {
+        FirestoreManager.markHabitAsCompleted(habito, selectedDate) { success ->
+            if (success) {
+                Toast.makeText(requireContext(), "¡Hábito marcado como completado!", Toast.LENGTH_SHORT).show()
+                loadHabitsForToday()
+            } else {
+                Toast.makeText(requireContext(), "Error al completar hábito", Toast.LENGTH_SHORT).show()
             }
         }
     }

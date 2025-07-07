@@ -42,8 +42,6 @@
         <activity android:name=".ui.activities.LoginActivity" android:exported="false" />
         <activity android:name=".ui.activities.RegisterActivity" android:exported="false" />
         <activity android:name=".ui.activities.SettingsActivity" android:exported="false" />
-        <activity android:name=".ui.activities.AddHabitActivity" android:exported="false" />
-        <activity android:name=".ui.activities.HabitDetailActivity" android:exported="false" />
         <activity android:name=".ui.activities.SuggestionsActivity" android:exported="false" />
         <activity android:name=".ui.activities.MainActivity" android:exported="false" />
 

@@ -2,54 +2,83 @@
 <androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/today_fragment_container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:padding="16dp">
 
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/swipeRefresh"
+    <!-- Fecha y Selector de Día -->
+    <LinearLayout
+        android:id="@+id/header_calendar"
+        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp">
+        <TextView
+            android:id="@+id/tv_selected_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Lunes 1 Julio"
+            android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+            android:layout_marginBottom="8dp"/>
 
-        <LinearLayout
+
+        <TextView
+            android:id="@+id/tv_today_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Today"
+            android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_day_selector"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:overScrollMode="never"
+            android:clipToPadding="false"
+            android:paddingVertical="4dp"
+            android:paddingHorizontal="2dp"/>
+    </LinearLayout>
 
-            <TextView
-                android:id="@+id/tvGreeting"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                style="@style/TextAppearance.Material3.TitleMedium"
-                android:text="¡Hola, usuario!" />
+    <!-- Lista de hábitos -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_habits_today"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_gravity="center"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="8dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="80dp"/>
 
-            <TextView
-                android:id="@+id/tvCompletedCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Completados: 0" />
+    <ProgressBar
+        android:id="@+id/progress_loading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone"/>
 
-            <TextView
-                android:id="@+id/tvPendingCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Pendientes: 0" />
+    <TextView
+        android:id="@+id/tv_empty_state"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🎉 No hay hábitos pendientes hoy"
+        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+        android:layout_gravity="center"
+        android:visibility="gone"/>
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvHabitos"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:paddingVertical="12dp" />
-        </LinearLayout>
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
+    <!-- FAB para nueva acción opcional -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabAddHabit"
+        android:id="@+id/fab_add_habit"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
-        android:contentDescription="@string/add_habit"
-        app:srcCompat="@drawable/ic_add" />
+        android:contentDescription="TODO"
+        app:srcCompat="@drawable/ic_add"
+        app:tint="@android:color/white"
+        app:backgroundTint="?attr/colorPrimary" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
