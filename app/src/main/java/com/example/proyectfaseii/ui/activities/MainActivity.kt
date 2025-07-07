@@ -11,8 +11,9 @@ import com.example.proyectfaseii.R
 import com.example.proyectfaseii.ui.adapters.MainPagerAdapter
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.core.view.get
+import androidx.fragment.app.FragmentActivity
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : FragmentActivity() {
 
     private lateinit var viewPager: ViewPager2
     private lateinit var bottomNav: BottomNavigationView
