@@ -12,8 +12,8 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.fragment.app.Fragment
 import com.example.proyectfaseii.R
 import com.example.proyectfaseii.data.firebase.FirestoreManager
-import com.example.proyectfaseii.ui.activities.EditarPerfilActivity
 import com.example.proyectfaseii.ui.activities.LoginActivity
+import com.example.proyectfaseii.ui.modals.EditarPerfilModal
 import com.example.proyectfaseii.utils.SharedPrefManager
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.auth.FirebaseAuth
@@ -100,13 +100,18 @@ class ProfileFragment : Fragment() {
                     }
             }
         }
+        parentFragmentManager.setFragmentResultListener("perfilActualizado", viewLifecycleOwner) { _, result ->
+            tvNombre.text = result.getString("nombre")
+            tvDescripcion.text = result.getString("descripcion")
+        }
 
         btnEditarPerfil.setOnClickListener {
-            val intent = Intent(requireContext(), EditarPerfilActivity::class.java).apply {
-                putExtra("nombre", tvNombre.text.toString())
-                putExtra("descripcion", tvDescripcion.text.toString())
-            }
-            editarPerfilLauncher.launch(intent)
+            val modal = EditarPerfilModal.newInstance(
+                tvNombre.text.toString(),
+                tvDescripcion.text.toString()
+            )
+
+            modal.show(parentFragmentManager, "EditarPerfilModal")
         }
 
         btnEditarFoto.setOnClickListener {

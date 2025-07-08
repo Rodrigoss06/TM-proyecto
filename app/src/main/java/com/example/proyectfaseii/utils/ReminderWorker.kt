@@ -4,22 +4,29 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.proyectfaseii.notifications.NotificationHelper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-/**
- * Worker que envía una notificación diaria si las notificaciones están habilitadas.
- */
 class ReminderWorker(
-    appContext: Context,
+    context: Context,
     workerParams: WorkerParameters
-) : CoroutineWorker(appContext, workerParams) {
+) : CoroutineWorker(context, workerParams) {
 
-    override suspend fun doWork(): Result {
+    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val prefs = SharedPrefManager.getInstance(applicationContext)
-        if (prefs.getNotificationsEnabled()) {
-            val title = "¡Hora de tu hábito!"
-            val message = "Revisa tus hábitos y marca tu progreso diario."
-            NotificationHelper.sendNotification(applicationContext, title, message)
+
+        return@withContext try {
+            if (prefs.areNotificationsEnabled()) {
+                NotificationHelper.sendNotification(
+                    applicationContext,
+                    title = "¡Hora de tu hábito!",
+                    message = "Revisa tus hábitos y marca tu progreso diario."
+                )
+            }
+            Result.success()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.retry()
         }
-        return Result.success()
     }
 }

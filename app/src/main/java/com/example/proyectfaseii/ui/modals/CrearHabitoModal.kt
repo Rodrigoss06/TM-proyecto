@@ -1,14 +1,21 @@
 package com.example.proyectfaseii.ui.modals
 
+import android.app.Activity
 import android.app.TimePickerDialog
+import android.content.Intent
+import android.graphics.Bitmap
 import android.os.Bundle
+import android.provider.MediaStore
 import android.view.*
 import android.widget.*
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import com.example.proyectfaseii.R
 import com.example.proyectfaseii.data.firebase.FirestoreManager
 import com.example.proyectfaseii.data.models.Area
 import com.example.proyectfaseii.data.models.Goal
 import com.example.proyectfaseii.data.models.Habito
+import com.example.proyectfaseii.ml.TextScanner
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
@@ -18,6 +25,7 @@ import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.textfield.TextInputEditText
 import java.text.SimpleDateFormat
 import java.util.*
+
 
 class CrearHabitoModal : BottomSheetDialogFragment() {
 
@@ -35,6 +43,11 @@ class CrearHabitoModal : BottomSheetDialogFragment() {
     private lateinit var btnWeekly: MaterialButton
     private lateinit var btnMonthly: MaterialButton
     private lateinit var btnYearly: MaterialButton
+    private lateinit var btnScanText: Button
+    private lateinit var takePictureLauncher: ActivityResultLauncher<Intent>
+
+    private var habitoExistente: Habito? = null
+
 
 
     private val reminderList = mutableListOf<String>()
@@ -68,6 +81,64 @@ class CrearHabitoModal : BottomSheetDialogFragment() {
         setupReminderPicker()
         setupSave()
         btnDaily.isChecked = true
+
+        btnScanText = view.findViewById(R.id.btnScanText)
+
+        btnScanText.setOnClickListener {
+            val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            if (cameraIntent.resolveActivity(requireContext().packageManager) != null) {
+                takePictureLauncher.launch(cameraIntent)
+            }
+        }
+
+        takePictureLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val imageBitmap = result.data?.extras?.get("data") as? Bitmap
+                if (imageBitmap != null) {
+                    TextScanner.scanFromBitmap(
+                        bitmap = imageBitmap,
+                        onSuccess = { scannedText ->
+                            etName.setText(scannedText.lines().firstOrNull()?.trim() ?: "")
+                            Toast.makeText(requireContext(), "Texto detectado", Toast.LENGTH_SHORT).show()
+                        },
+                        onError = { e ->
+                            Toast.makeText(requireContext(), "Error al escanear: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                }
+            }
+        }
+
+        habitoExistente = arguments?.getSerializable("habito") as? Habito
+        habitoExistente?.let { habit ->
+            etName.setText(habit.name)
+            etStartDate.setText(habit.start_date)
+            etEndDate.setText(habit.end_date ?: "")
+            reminderList.addAll(habit.remind)
+            selectedDays.addAll(habit.time_of_day)
+
+            habit.remind.forEach { addReminderChip(it) }
+
+            val recurrenceId = when (habit.recurrence) {
+                "Daily" -> R.id.btn_daily
+                "Weekly" -> R.id.btn_weekly
+                "Monthly" -> R.id.btn_monthly
+                "Yearly" -> R.id.btn_yearly
+                else -> R.id.btn_daily
+            }
+            groupRecurrence.check(recurrenceId)
+
+            // Marcar días seleccionados si es Weekly
+            for (i in 0 until chipGroupWeekdays.childCount) {
+                val chip = chipGroupWeekdays.getChildAt(i) as? Chip
+                val key = dayKeys.getOrNull(i)
+                if (chip != null && key in habit.time_of_day) chip.isChecked = true
+            }
+
+            btnSave.text = "Actualizar"
+        }
+
+
 
     }
 
@@ -171,8 +242,11 @@ class CrearHabitoModal : BottomSheetDialogFragment() {
                 selectedDays.addAll(listOf("mon", "tue", "wed", "thu", "fri", "sat", "sun"))
             }
 
+            val idHabit = habitoExistente?.id ?: UUID.randomUUID().toString()
+
+
             val habito = Habito(
-                id = UUID.randomUUID().toString(),
+                id = idHabit,
                 name = name,
                 recurrence = recurrence,
                 start_date = startDate,
@@ -199,4 +273,14 @@ class CrearHabitoModal : BottomSheetDialogFragment() {
             }
         }
     }
+    companion object {
+        fun newInstance(habito: Habito): CrearHabitoModal {
+            val modal = CrearHabitoModal()
+            val args = Bundle()
+            args.putSerializable("habito", habito)
+            modal.arguments = args
+            return modal
+        }
+    }
+
 }

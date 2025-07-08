@@ -1,15 +1,37 @@
-<?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <SwitchPreferenceCompat
+        android:key="dark_mode"
+        android:title="Modo oscuro"
+        android:summary="Activa o desactiva el tema oscuro por defecto"
+        android:defaultValue="false" />
+
+    <SwitchPreferenceCompat
+        android:key="habit_notifications"
+        android:title="Notificaciones de hábitos"
+        android:summary="Recibir recordatorios diarios"
+        android:defaultValue="true" />
+
+    <ListPreference
+        android:key="suggestion_frequency"
+        android:title="Frecuencia de sugerencias"
+        android:summary="Cada cuánto deseas recibir sugerencias nuevas"
+        android:entries="@array/freq_options"
+        android:entryValues="@array/freq_values"
+        android:defaultValue="daily" />
+
+    <ListPreference
+        android:key="language"
+        android:title="Idioma de la app"
+        android:summary="Selecciona el idioma"
+        android:entries="@array/lang_options"
+        android:entryValues="@array/lang_values"
+        android:defaultValue="es" />
 
     <EditTextPreference
         android:key="username"
-        android:title="@string/pref_username_title"
-        android:dialogTitle="@string/pref_username_dialog"
-        android:inputType="text" />
-
-    <SwitchPreferenceCompat
-        android:key="notifications"
-        android:title="@string/pref_notifications_title"
-        android:defaultValue="true" />
+        android:title="Nombre visible"
+        android:summary="Este nombre se mostrará en tu perfil"
+        android:defaultValue="Usuario" />
 
 </PreferenceScreen>

@@ -5,50 +5,52 @@ import android.content.SharedPreferences
 
 class SharedPrefManager private constructor(context: Context) {
 
-    companion object {
-        private const val PREF_NAME = "user_prefs"
-        private const val KEY_USER_ID = "key_user_id"
-        private const val KEY_USER_NAME = "key_user_name"
-        private const val KEY_USER_EMAIL = "key_user_email"
-        private const val KEY_NOTIFICATIONS = "key_notifications"
+    private val sharedPreferences: SharedPreferences =
+        context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
 
-        @Volatile
-        private var INSTANCE: SharedPrefManager? = null
+    companion object {
+        private var instance: SharedPrefManager? = null
 
         fun getInstance(context: Context): SharedPrefManager {
-            return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: SharedPrefManager(context.applicationContext).also { INSTANCE = it }
+            if (instance == null) {
+                instance = SharedPrefManager(context.applicationContext)
             }
+            return instance!!
         }
     }
 
-    private val prefs: SharedPreferences =
-        context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-
-    fun saveUser(id: String, nombre: String, email: String) {
-        prefs.edit().apply {
-            putString(KEY_USER_ID, id)
-            putString(KEY_USER_NAME, nombre)
-            putString(KEY_USER_EMAIL, email)
-            apply()
-        }
+    fun saveUser(id: String, nombre: String, email: String, descripcion: String = "") {
+        sharedPreferences.edit()
+            .putString("user_id", id)
+            .putString("username", nombre)
+            .putString("email", email)
+            .putString("descripcion", descripcion)
+            .apply()
     }
 
-    fun getUserId(): String? = prefs.getString(KEY_USER_ID, null)
-    fun getUserName(): String? = prefs.getString(KEY_USER_NAME, null)
-    fun getUserEmail(): String? = prefs.getString(KEY_USER_EMAIL, null)
+    fun getUserId(): String? = sharedPreferences.getString("user_id", null)
+    fun getUserName(): String? = sharedPreferences.getString("username", null)
+    fun getUserEmail(): String? = sharedPreferences.getString("email", null)
+    fun getUserDescription(): String? = sharedPreferences.getString("descripcion", null)
 
-    fun setNotificationsEnabled(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_NOTIFICATIONS, enabled).apply()
+    fun saveUserName(name: String) {
+        sharedPreferences.edit().putString("username", name).apply()
     }
 
-    fun getNotificationsEnabled(): Boolean = prefs.getBoolean(KEY_NOTIFICATIONS, true)
+    fun isDarkModeEnabled(): Boolean = sharedPreferences.getBoolean("dark_mode", false)
+    fun getSuggestionFrequency(): String = sharedPreferences.getString("suggestion_frequency", "daily") ?: "daily"
+    fun areNotificationsEnabled(): Boolean = sharedPreferences.getBoolean("habit_notifications", true)
+
+
+    fun setDarkModeEnabled(enabled: Boolean) {
+        sharedPreferences.edit().putBoolean("dark_mode", enabled).apply()
+    }
 
     fun clear() {
-        prefs.edit().clear().apply()
+        sharedPreferences.edit().clear().apply()
     }
 
-    fun getUserDescription(): CharSequence? {
-        return "asd"
+    fun setNotificationsEnabled(enabled: Boolean) {
+        sharedPreferences.edit().putBoolean("habit_notifications", enabled).apply()
     }
 }

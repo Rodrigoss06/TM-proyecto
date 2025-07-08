@@ -69,7 +69,8 @@ class HabitsFragment : Fragment() {
                 startActivity(intent)
             },
             onEdit = { habito ->
-                Toast.makeText(requireContext(), "Editar hábito: ${habito.name}", Toast.LENGTH_SHORT).show()
+                val modal = CrearHabitoModal.newInstance(habito)
+                modal.show(parentFragmentManager, "EditarHabitoModal")
             },
             onArchive = { habito -> archiveHabit(habito) }
         )

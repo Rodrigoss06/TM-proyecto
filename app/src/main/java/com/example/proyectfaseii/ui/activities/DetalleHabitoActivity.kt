@@ -1,13 +1,15 @@
 package com.example.proyectfaseii.ui.activities
 
 import android.os.Bundle
-import android.widget.Button
+import android.view.View
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.proyectfaseii.R
 import com.example.proyectfaseii.data.firebase.FirestoreManager
+import com.example.proyectfaseii.data.models.GoalHistoryItem
 import com.example.proyectfaseii.data.models.Habito
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
@@ -81,25 +83,42 @@ class DetalleHabitoActivity : AppCompatActivity() {
         }
 
         btnEdit.setOnClickListener {
-            Toast.makeText(this, "Funcionalidad de edición pendiente", Toast.LENGTH_SHORT).show()
+            val modal = com.example.proyectfaseii.ui.modals.CrearHabitoModal.newInstance(habito)
+            modal.show(supportFragmentManager, "EditarHabitoModal")
         }
+
     }
 
     private fun populateUI() {
+
+
         tvHabitName.text = habito.name
         tvHabitArea.text = "Área: ${habito.area?.name ?: "N/A"}"
         tvHabitPriority.text = "Prioridad: ${mapPriority(habito.priority)}"
         tvStreaks.text = "🔥 Racha actual: ${habito.current_streak} / Récord: ${habito.longest_streak}"
-
-        drawChart(habito)
+        val habitoEditado = habito.copy(
+            goal_history_items = listOf(
+                GoalHistoryItem("2025-07-01", 12.4),
+                GoalHistoryItem("2025-07-02", 15.3),
+                GoalHistoryItem("2025-07-03", 21.5)
+            )
+        )
+        drawChart(habitoEditado)
     }
 
     private fun drawChart(habit: Habito) {
         val entries = ArrayList<Entry>()
         val labels = ArrayList<String>()
         val formatter = DateTimeFormatter.ISO_DATE
+        val placeholder: ImageView = findViewById(R.id.tv_chart_placeholder)
 
         val sortedHistory = habit.goal_history_items.sortedBy { it.date }
+
+        if (sortedHistory.isEmpty()) {
+            lineChart.visibility = View.GONE
+            placeholder.visibility = View.VISIBLE
+            return
+        }
 
         sortedHistory.forEachIndexed { index, goal ->
             val dateLabel = LocalDate.parse(goal.date, formatter).dayOfMonth.toString()
@@ -115,6 +134,8 @@ class DetalleHabitoActivity : AppCompatActivity() {
         }
 
         lineChart.apply {
+            visibility = View.VISIBLE
+            placeholder.visibility = View.GONE
             data = LineData(dataSet)
             xAxis.apply {
                 valueFormatter = IndexAxisValueFormatter(labels)

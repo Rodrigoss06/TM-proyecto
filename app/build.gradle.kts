@@ -54,6 +54,8 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.tensorflow.lite)
+
 
     // — AÑADE ESTAS LÍNEAS —
     implementation(libs.androidx.viewpager2)

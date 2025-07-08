@@ -3,67 +3,78 @@ package com.example.proyectfaseii.ui.activities
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.proyectfaseii.R
-import com.example.proyectfaseii.data.api.RetrofitClient
 import com.example.proyectfaseii.data.models.Habito
 import com.example.proyectfaseii.ui.adapters.SuggestionsAdapter
-import com.example.proyectfaseii.utils.SharedPrefManager
-import kotlinx.coroutines.launch
+import org.tensorflow.lite.Interpreter
+import java.io.FileInputStream
+import java.nio.MappedByteBuffer
+import java.nio.channels.FileChannel
+import java.io.IOException
 
-/**
- * Muestra una lista de hábitos sugeridos y permite añadirlos al usuario.
- */
 class SuggestionsActivity : AppCompatActivity() {
 
-    private lateinit var rvSuggestions: RecyclerView
+    private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: SuggestionsAdapter
+    private lateinit var tflite: Interpreter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_suggestions)
 
-        rvSuggestions = findViewById(R.id.rvSuggestions)
+        recyclerView = findViewById(R.id.rvSuggestions)
+        recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = SuggestionsAdapter(emptyList()) { habit ->
-            addSuggestedHabit(habit)
+            Toast.makeText(this, "Hábito seleccionado: ${habit.name}", Toast.LENGTH_SHORT).show()
         }
-        rvSuggestions.layoutManager = LinearLayoutManager(this)
-        rvSuggestions.adapter = adapter
+        recyclerView.adapter = adapter
 
-        loadSuggestions()
-    }
-
-    private fun loadSuggestions() {
-        val userId = SharedPrefManager.getInstance(this).getUserId() ?: return
-        lifecycleScope.launch {
-            try {
-                val response = RetrofitClient.apiService.obtenerSugerencias(userId)
-                if (response.isSuccessful) {
-                    val suggestions: List<Habito> = response.body() ?: emptyList()
-                    adapter.updateData(suggestions)
-                } else {
-                    Toast.makeText(this@SuggestionsActivity, "Error al cargar sugerencias.", Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this@SuggestionsActivity, "Error de red.", Toast.LENGTH_SHORT).show()
-            }
+        try {
+            tflite = Interpreter(loadModelFile("habit_recommender.tflite"))
+            val suggestions = inferHabitSuggestions()
+            adapter.updateData(suggestions)
+        } catch (e: IOException) {
+            Toast.makeText(this, "Error al cargar el modelo", Toast.LENGTH_LONG).show()
         }
     }
 
-    private fun addSuggestedHabit(habit: Habito) {
-        val userId = SharedPrefManager.getInstance(this).getUserId() ?: return
-        lifecycleScope.launch {
-            try {
-                // Crear y vincular el hábito sugerido
-                RetrofitClient.apiService.crearHabito(habit)
-                RetrofitClient.apiService.vincularHabito(mapOf("userId" to userId, "habitId" to habit.id))
-                Toast.makeText(this@SuggestionsActivity, "Hábito agregado: ${habit.name}", Toast.LENGTH_SHORT).show()
-                loadSuggestions() // recargar en caso de que ya no deba volver a sugerirse
-            } catch (e: Exception) {
-                Toast.makeText(this@SuggestionsActivity, "Error al agregar hábito", Toast.LENGTH_SHORT).show()
-            }
-        }
+    @Throws(IOException::class)
+    private fun loadModelFile(modelName: String): MappedByteBuffer {
+        val fileDescriptor = assets.openFd(modelName)
+        val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
+        val fileChannel = inputStream.channel
+        return fileChannel.map(
+            FileChannel.MapMode.READ_ONLY,
+            fileDescriptor.startOffset,
+            fileDescriptor.declaredLength
+        )
+    }
+
+    private fun inferHabitSuggestions(): List<Habito> {
+        // Suponemos entrada de 9 características (como hábitos completados, frecuencia, etc.)
+        val input = Array(1) { FloatArray(9) { Math.random().toFloat() } } // dummy data
+        val output = Array(1) { FloatArray(5) } // 5 posibles hábitos recomendados
+
+        tflite.run(input, output)
+
+        // Simulación de hábitos
+        val habitTemplates = listOf(
+            Habito(name = "Leer 10 minutos"),
+            Habito(name = "Beber agua"),
+            Habito(name = "Ejercicio 15 minutos"),
+            Habito(name = "Planificar el día"),
+            Habito(name = "Estiramientos mañaneros")
+        )
+
+        // Tomamos los top 3 más relevantes
+        val topIndexes = output[0]
+            .mapIndexed { i, score -> i to score }
+            .sortedByDescending { it.second }
+            .take(3)
+            .map { it.first }
+
+        return topIndexes.map { habitTemplates[it] }
     }
 }

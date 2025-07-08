@@ -1,5 +1,7 @@
 package com.example.proyectfaseii.data.models
 
+import java.io.Serializable
+
 data class Habito(
     val id: String = "",
     val name: String = "",
@@ -19,4 +21,4 @@ data class Habito(
     val current_streak: Int = 0,
     val longest_streak: Int = 0,
     val last_completed_date: String = ""
-)
+) : Serializable

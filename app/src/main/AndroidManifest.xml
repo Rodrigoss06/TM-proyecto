@@ -45,6 +45,8 @@
         <activity android:name=".ui.activities.SuggestionsActivity" android:exported="false" />
         <activity android:name=".ui.activities.MainActivity" android:exported="false" />
         <activity android:name=".ui.activities.DetalleHabitoActivity" android:exported="false" />
+        <activity android:name=".ui.activities.e" android:exported="false" />
+
 
 
 
