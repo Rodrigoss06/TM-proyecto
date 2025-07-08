@@ -1,26 +1,43 @@
 package com.example.proyectfaseii.ui.fragments
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.*
 import android.widget.*
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.fragment.app.Fragment
 import com.example.proyectfaseii.R
 import com.example.proyectfaseii.data.firebase.FirestoreManager
+import com.example.proyectfaseii.ui.activities.EditarPerfilActivity
 import com.example.proyectfaseii.ui.activities.LoginActivity
+import com.example.proyectfaseii.utils.SharedPrefManager
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class ProfileFragment : Fragment() {
 
-    private lateinit var tvUsername: TextView
+    private lateinit var tvNombre: TextView
+    private lateinit var tvDescripcion: TextView
+    private lateinit var tvCorreo: TextView
+    private lateinit var imgPerfil: ImageView
+    private lateinit var btnEditarFoto: FloatingActionButton
+    private lateinit var btnEditarPerfil: Button
+    private lateinit var btnCerrarSesion: Button
+
     private lateinit var tvTotalHabits: TextView
     private lateinit var tvHabitsCompleted: TextView
     private lateinit var tvCurrentStreak: TextView
     private lateinit var tvLongestStreak: TextView
     private lateinit var switchTheme: Switch
-    private lateinit var btnLogout: Button
+
+    private lateinit var userId: String
+    private lateinit var firestore: FirebaseFirestore
+    private lateinit var editarPerfilLauncher: ActivityResultLauncher<Intent>
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -31,24 +48,74 @@ class ProfileFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        // Enlazar vistas
-        tvUsername = view.findViewById(R.id.tv_username)
+        val shared = SharedPrefManager.getInstance(requireContext())
+        firestore = FirebaseFirestore.getInstance()
+        userId = shared.getUserId() ?: return
+
+        // Bind views
+        tvNombre = view.findViewById(R.id.tv_username)
+        tvDescripcion = view.findViewById(R.id.tv_description)
+        tvCorreo = view.findViewById(R.id.tv_email)
+        imgPerfil = view.findViewById(R.id.img_profile)
+        btnEditarFoto = view.findViewById(R.id.btn_edit_photo)
+        btnEditarPerfil = view.findViewById(R.id.btn_edit_profile)
+        btnCerrarSesion = view.findViewById(R.id.btn_logout)
+
         tvTotalHabits = view.findViewById(R.id.tv_total_habits)
         tvHabitsCompleted = view.findViewById(R.id.tv_habits_completed)
         tvCurrentStreak = view.findViewById(R.id.tv_current_streak)
         tvLongestStreak = view.findViewById(R.id.tv_longest_streak)
         switchTheme = view.findViewById(R.id.switch_theme)
-        btnLogout = view.findViewById(R.id.btn_logout)
 
-        // Inicializar lógica
-        loadUserData()
+        tvCorreo.text = shared.getUserEmail()
+        tvNombre.text = shared.getUserName()
+        tvDescripcion.text = shared.getUserDescription() ?: "Sin descripción"
+
         setupThemeSwitch()
         setupLogout()
+        loadUserStats()
+        cargarPerfilDesdeFirestore()
+
+        // Registrar launcher para edición
+        editarPerfilLauncher = registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val data = result.data ?: return@registerForActivityResult
+                val nuevoNombre = data.getStringExtra("nombreActualizado") ?: return@registerForActivityResult
+                val nuevaDescripcion = data.getStringExtra("descripcionActualizada") ?: ""
+
+                tvNombre.text = nuevoNombre
+                tvDescripcion.text = nuevaDescripcion
+
+                val updates = mapOf(
+                    "nombre" to nuevoNombre,
+                    "descripcion" to nuevaDescripcion
+                )
+
+                firestore.collection("users").document(userId)
+                    .update(updates)
+                    .addOnSuccessListener {
+                        Toast.makeText(requireContext(), "Perfil actualizado", Toast.LENGTH_SHORT).show()
+                    }
+            }
+        }
+
+        btnEditarPerfil.setOnClickListener {
+            val intent = Intent(requireContext(), EditarPerfilActivity::class.java).apply {
+                putExtra("nombre", tvNombre.text.toString())
+                putExtra("descripcion", tvDescripcion.text.toString())
+            }
+            editarPerfilLauncher.launch(intent)
+        }
+
+        btnEditarFoto.setOnClickListener {
+            Toast.makeText(requireContext(), "Función de cambiar foto aún no implementada", Toast.LENGTH_SHORT).show()
+        }
     }
 
-    private fun loadUserData() {
+    private fun loadUserStats() {
         FirestoreManager.getCurrentUserProfile { user ->
-            tvUsername.text = "Hola, ${user.name}"
             tvTotalHabits.text = "Total hábitos: ${user.totalHabits}"
             tvHabitsCompleted.text = "Completados: ${user.habitsCompleted}"
             tvCurrentStreak.text = "Racha actual: ${user.currentStreak} 🔥"
@@ -56,15 +123,22 @@ class ProfileFragment : Fragment() {
         }
     }
 
+    private fun cargarPerfilDesdeFirestore() {
+        firestore.collection("users").document(userId)
+            .get()
+            .addOnSuccessListener { doc ->
+                tvNombre.text = doc.getString("nombre") ?: "Sin nombre"
+                tvDescripcion.text = doc.getString("descripcion") ?: "Sin descripción"
+            }
+    }
+
     private fun setupThemeSwitch() {
         val shared = requireContext().getSharedPreferences("prefs", Context.MODE_PRIVATE)
         val isDark = shared.getBoolean("dark_mode", false)
-
+        switchTheme.isChecked = isDark
         AppCompatDelegate.setDefaultNightMode(
             if (isDark) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
         )
-
-        switchTheme.isChecked = isDark
 
         switchTheme.setOnCheckedChangeListener { _, isChecked ->
             shared.edit().putBoolean("dark_mode", isChecked).apply()
@@ -75,9 +149,9 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setupLogout() {
-        btnLogout.setOnClickListener {
+        btnCerrarSesion.setOnClickListener {
+            SharedPrefManager.getInstance(requireContext()).clear()
             FirebaseAuth.getInstance().signOut()
-            Toast.makeText(requireContext(), "Sesión cerrada", Toast.LENGTH_SHORT).show()
             val intent = Intent(requireContext(), LoginActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)

@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.proyectfaseii.data.models.*
 import com.example.proyectfaseii.utils.Utils
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -11,7 +12,6 @@ import java.time.format.DateTimeFormatter
 object FirestoreManager {
 
     private val db = FirebaseFirestore.getInstance()
-
     private val uid: String
         get() = FirebaseAuth.getInstance().uid ?: ""
 
@@ -25,132 +25,107 @@ object FirestoreManager {
             return
         }
 
-        Log.d("FirestoreManager", "✅ UID usado: $uid")
         Log.d("FirestoreManager", "📤 Guardando hábito: $habito")
 
         habitsRef.document(habito.id)
-            .set(habito)
-            .addOnSuccessListener {
-                Log.d("FirestoreManager", "✅ Hábito guardado correctamente")
-                callback(true)
-            }
-            .addOnFailureListener {
-                Log.e("FirestoreManager", "❌ Error al guardar hábito: ${it.message}", it)
-                callback(false)
+            .get()
+            .addOnSuccessListener { doc ->
+                val isNew = !doc.exists()
+                habitsRef.document(habito.id)
+                    .set(habito)
+                    .addOnSuccessListener {
+                        if (isNew) {
+                            userRef.update("total_habits", FieldValue.increment(1))
+                        }
+                        Log.d("FirestoreManager", "✅ Hábito guardado correctamente")
+                        callback(true)
+                    }
+                    .addOnFailureListener {
+                        Log.e("FirestoreManager", "❌ Error al guardar hábito: ${it.message}", it)
+                        callback(false)
+                    }
             }
     }
 
     fun deleteHabit(habitId: String, callback: () -> Unit) {
-        if (uid.isBlank()) {
-            Log.e("FirestoreManager", "❌ UID vacío. No se puede eliminar hábito.")
-            return
-        }
-
-        Log.d("FirestoreManager", "🗑 Eliminando hábito: $habitId")
+        if (uid.isBlank()) return
 
         habitsRef.document(habitId)
             .delete()
             .addOnSuccessListener {
-                Log.d("FirestoreManager", "✅ Hábito eliminado correctamente")
                 callback()
-            }
-            .addOnFailureListener {
-                Log.e("FirestoreManager", "❌ Error al eliminar hábito: ${it.message}", it)
             }
     }
 
     fun archiveHabit(habitId: String, callback: () -> Unit) {
-        if (uid.isBlank()) {
-            Log.e("FirestoreManager", "❌ UID vacío. No se puede archivar hábito.")
-            return
-        }
-
-        Log.d("FirestoreManager", "📦 Archivando hábito: $habitId")
-
+        if (uid.isBlank()) return
         habitsRef.document(habitId)
-            .update("is_archived", true)
-            .addOnSuccessListener {
-                Log.d("FirestoreManager", "✅ Hábito archivado")
-                callback()
-            }
-            .addOnFailureListener {
-                Log.e("FirestoreManager", "❌ Error al archivar: ${it.message}", it)
-            }
+            .update("_archived", true)
+            .addOnSuccessListener { callback() }
     }
 
     fun getHabitById(habitId: String, callback: (Habito?) -> Unit) {
         if (uid.isBlank()) {
-            Log.e("FirestoreManager", "❌ UID vacío. No se puede obtener hábito.")
             callback(null)
             return
         }
 
-        Log.d("FirestoreManager", "🔍 Buscando hábito por ID: $habitId")
-
         habitsRef.document(habitId)
             .get()
             .addOnSuccessListener {
-                val habito = it.toObject(Habito::class.java)
-                Log.d("FirestoreManager", "✅ Hábito encontrado: $habito")
-                callback(habito)
+                callback(it.toObject(Habito::class.java))
             }
             .addOnFailureListener {
-                Log.e("FirestoreManager", "❌ Error al obtener hábito: ${it.message}", it)
                 callback(null)
             }
     }
 
     fun getHabitsForDay(date: LocalDate, callback: (List<Habito>) -> Unit) {
         if (uid.isBlank()) {
-            Log.e("FirestoreManager", "❌ UID vacío. No se puede consultar hábitos diarios.")
             callback(emptyList())
             return
         }
 
-        Log.d("FirestoreManager", "📅 Consultando hábitos para el día: $date")
-
         habitsRef
-            .whereEqualTo("is_archived", false)
+            .whereEqualTo("_archived", false)
             .get()
             .addOnSuccessListener { docs ->
-                val habits = docs.mapNotNull { it.toObject(Habito::class.java) }
-                    .filter { it.time_of_day.isNotEmpty() }
+                val filtered = docs.mapNotNull { it.toObject(Habito::class.java) }
+                    .filter { it.time_of_day.isNotEmpty() } // puedes refinar lógica según `date.dayOfWeek`
 
-                Log.d("FirestoreManager", "✅ Hábitos obtenidos para el día: ${habits.size}")
-                callback(habits)
+                callback(filtered)
             }
             .addOnFailureListener {
-                Log.e("FirestoreManager", "❌ Error al consultar hábitos diarios", it)
                 callback(emptyList())
             }
     }
 
     fun markHabitAsCompleted(habito: Habito, date: LocalDate, callback: (Boolean) -> Unit) {
         if (uid.isBlank()) {
-            Log.e("FirestoreManager", "❌ UID vacío. No se puede marcar como completado.")
             callback(false)
             return
         }
 
         val dateStr = date.format(DateTimeFormatter.ISO_DATE)
-        val updatedStreak = if (Utils.isYesterday(habito.last_completed_date, dateStr)) {
+        val newStreak = if (Utils.isYesterday(habito.last_completed_date, dateStr)) {
             habito.current_streak + 1
         } else 1
 
+        val updatedLongest = maxOf(habito.longest_streak, newStreak)
+
         val updates = mapOf(
             "last_completed_date" to dateStr,
-            "current_streak" to updatedStreak,
-            "longest_streak" to maxOf(updatedStreak, habito.longest_streak)
+            "current_streak" to newStreak,
+            "longest_streak" to updatedLongest
         )
-
-        Log.d("FirestoreManager", "✅ Marcando hábito como completado: ${habito.id}")
-        Log.d("FirestoreManager", "🔁 Updates: $updates")
 
         habitsRef.document(habito.id)
             .update(updates)
             .addOnSuccessListener {
-                Log.d("FirestoreManager", "✅ Hábito actualizado con nueva racha")
-                callback(true)
+                Log.d("FirestoreManager", "✅ Hábito actualizado con rachas")
+                actualizarUsuarioStats {
+                    callback(true)
+                }
             }
             .addOnFailureListener {
                 Log.e("FirestoreManager", "❌ Error al marcar como completado", it)
@@ -158,14 +133,37 @@ object FirestoreManager {
             }
     }
 
+    private fun actualizarUsuarioStats(callback: () -> Unit) {
+        userRef.get().addOnSuccessListener { doc ->
+            val total = (doc.getLong("total_habits") ?: 0).toInt()
+            val completados = (doc.getLong("habits_completed") ?: 0).toInt() + 1
+            val completionRate = if (total > 0) completados.toDouble() / total else 0.0
+
+            val updated = mapOf(
+                "habits_completed" to completados,
+                "completion_rate" to completionRate
+            )
+
+            userRef.update(updated)
+                .addOnSuccessListener {
+                    Log.d("FirestoreManager", "📈 Stats de usuario actualizadas: $updated")
+                    callback()
+                }
+                .addOnFailureListener {
+                    Log.e("FirestoreManager", "❌ Error al actualizar usuario", it)
+                    callback()
+                }
+        }.addOnFailureListener {
+            Log.e("FirestoreManager", "❌ Error al leer datos de usuario", it)
+            callback()
+        }
+    }
+
     fun getHabitsByFrequency(frequency: String, callback: (List<Habito>) -> Unit) {
         if (uid.isBlank()) {
-            Log.e("FirestoreManager", "❌ UID vacío. No se puede consultar por frecuencia.")
             callback(emptyList())
             return
         }
-
-        Log.d("FirestoreManager", "📊 Consultando hábitos con frecuencia: $frequency")
 
         habitsRef
             .whereEqualTo("recurrence", frequency)
@@ -173,18 +171,14 @@ object FirestoreManager {
             .get()
             .addOnSuccessListener { result ->
                 val habits = result.mapNotNull { it.toObject(Habito::class.java) }
-                Log.d("FirestoreManager", "✅ Hábitos encontrados: ${habits.size}")
                 callback(habits)
             }
             .addOnFailureListener {
-                Log.e("FirestoreManager", "❌ Error al consultar frecuencia", it)
                 callback(emptyList())
             }
     }
 
     fun getLeaderboard(callback: (List<UserRanking>) -> Unit) {
-        Log.d("FirestoreManager", "👑 Consultando leaderboard")
-
         db.collection("usuarios")
             .get()
             .addOnSuccessListener { result ->
@@ -194,23 +188,15 @@ object FirestoreManager {
                     val currentStreak = (doc.getLong("current_streak") ?: 0L).toInt()
                     UserRanking(name, completionRate, currentStreak)
                 }
-
-                Log.d("FirestoreManager", "✅ Leaderboard cargado: ${rankings.size} usuarios")
                 callback(rankings.sortedByDescending { it.completionRate })
             }
             .addOnFailureListener {
-                Log.e("FirestoreManager", "❌ Error al consultar leaderboard", it)
                 callback(emptyList())
             }
     }
 
     fun getCurrentUserProfile(callback: (UserRanking) -> Unit) {
-        if (uid.isBlank()) {
-            Log.e("FirestoreManager", "❌ UID vacío. No se puede obtener perfil.")
-            return
-        }
-
-        Log.d("FirestoreManager", "👤 Consultando perfil de usuario actual")
+        if (uid.isBlank()) return
 
         userRef.get()
             .addOnSuccessListener { doc ->
@@ -220,8 +206,6 @@ object FirestoreManager {
                 val longestStreak = (doc.getLong("longest_streak") ?: 0).toInt()
                 val total = (doc.getLong("total_habits") ?: 0).toInt()
                 val completed = (doc.getLong("habits_completed") ?: 0).toInt()
-
-                Log.d("FirestoreManager", "✅ Perfil obtenido correctamente")
 
                 callback(
                     UserRanking(
@@ -233,9 +217,6 @@ object FirestoreManager {
                         completed
                     )
                 )
-            }
-            .addOnFailureListener {
-                Log.e("FirestoreManager", "❌ Error al obtener perfil", it)
             }
     }
 }

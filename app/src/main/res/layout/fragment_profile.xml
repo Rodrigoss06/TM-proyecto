@@ -1,42 +1,131 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:padding="16dp">
 
-    <TextView
-        android:id="@+id/tv_username"
-        android:text="Hola, Usuario"
-        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"  android:layout_height="match_parent" android:layout_width="match_parent"/>
-
-    <TextView
-        android:id="@+id/tv_total_habits"
-        android:text="Total hábitos: 0"
-        android:layout_marginTop="16dp"  android:layout_height="match_parent" android:layout_width="match_parent"/>
-
-    <TextView
-        android:id="@+id/tv_habits_completed"
-        android:text="Hábitos completados: 0"   android:layout_height="match_parent" android:layout_width="match_parent"/>
-
-    <TextView
-        android:id="@+id/tv_current_streak"
-        android:text="Racha actual: 0 🔥"  android:layout_height="match_parent" android:layout_width="match_parent" />
-
-    <TextView
-        android:id="@+id/tv_longest_streak"
-        android:text="Mayor racha: 0 🏆" android:layout_height="match_parent" android:layout_width="match_parent" />
-
-    <Switch
-        android:id="@+id/switch_theme"
-        android:layout_marginTop="24dp"
-        android:text="Modo oscuro"  android:layout_height="match_parent" android:layout_width="match_parent"/>
-
-    <Button
-        android:id="@+id/btn_logout"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Cerrar sesión"
-        android:layout_marginTop="16dp"/>
-</LinearLayout>
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
+
+        <!-- Imagen de perfil -->
+        <FrameLayout
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginBottom="16dp">
+
+            <ImageView
+                android:id="@+id/img_profile"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_profile"
+                android:scaleType="centerCrop"
+                android:padding="8dp" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/btn_edit_photo"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="4dp"
+                android:src="@drawable/ic_edit"
+                android:contentDescription="Editar foto"
+                android:tint="@android:color/white"
+                android:backgroundTint="@color/purple_700"
+                android:elevation="4dp" />
+        </FrameLayout>
+
+        <!-- Nombre de usuario -->
+        <TextView
+            android:id="@+id/tv_username"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nombre"
+            android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+            android:textStyle="bold" />
+
+        <!-- Descripción -->
+        <TextView
+            android:id="@+id/tv_description"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Descripción del usuario"
+            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+            android:layout_marginTop="4dp" />
+
+        <!-- Correo -->
+        <TextView
+            android:id="@+id/tv_email"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="usuario@email.com"
+            android:textAppearance="@style/TextAppearance.Material3.LabelMedium"
+            android:layout_marginTop="4dp" />
+
+        <!-- Botón editar perfil -->
+        <Button
+            android:id="@+id/btn_edit_profile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Editar perfil"
+            android:layout_marginTop="12dp"
+            android:backgroundTint="@color/purple_500"
+            android:textColor="@android:color/white" />
+
+        <!-- Estadísticas -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#CCCCCC"
+            android:layout_marginVertical="16dp" />
+
+        <TextView
+            android:id="@+id/tv_total_habits"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Total hábitos: 0"
+            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+        <TextView
+            android:id="@+id/tv_habits_completed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Completados: 0"
+            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+        <TextView
+            android:id="@+id/tv_current_streak"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Racha actual: 0 🔥"
+            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+        <TextView
+            android:id="@+id/tv_longest_streak"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Mayor racha: 0 🏆"
+            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+        <!-- Tema oscuro -->
+        <Switch
+            android:id="@+id/switch_theme"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Modo oscuro"
+            android:layout_marginTop="24dp" />
+
+        <!-- Cerrar sesión -->
+        <Button
+            android:id="@+id/btn_logout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Cerrar sesión"
+            android:layout_marginTop="20dp"
+            android:textColor="@android:color/white"
+            android:backgroundTint="@color/gmp_ref_palette_red90" />
+
+    </LinearLayout>
+</ScrollView>

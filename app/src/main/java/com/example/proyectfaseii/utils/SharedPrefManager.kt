@@ -47,4 +47,8 @@ class SharedPrefManager private constructor(context: Context) {
     fun clear() {
         prefs.edit().clear().apply()
     }
+
+    fun getUserDescription(): CharSequence? {
+        return "asd"
+    }
 }

@@ -13,13 +13,12 @@ import com.example.proyectfaseii.data.api.RetrofitClient
 import com.example.proyectfaseii.data.models.Usuario
 import com.example.proyectfaseii.utils.SharedPrefManager
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.UserProfileChangeRequest
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-/**
- * Pantalla de registro de usuario con Firebase Auth y backend Neo4j
- */
 class RegisterActivity : AppCompatActivity() {
 
     private lateinit var etName: EditText
@@ -45,6 +44,7 @@ class RegisterActivity : AppCompatActivity() {
             val nombre = etName.text.toString().trim()
             val email = etEmail.text.toString().trim()
             val password = etPassword.text.toString().trim()
+
             if (nombre.isEmpty()) {
                 etName.error = "Ingresa tu nombre"
                 return@setOnClickListener
@@ -57,12 +57,12 @@ class RegisterActivity : AppCompatActivity() {
                 etPassword.error = "La contraseña debe tener al menos 6 caracteres"
                 return@setOnClickListener
             }
+
             registerUser(nombre, email, password)
         }
 
         tvGoToLogin.setOnClickListener {
-            val intent = Intent(this, LoginActivity::class.java)
-            startActivity(intent)
+            startActivity(Intent(this, LoginActivity::class.java))
             finish()
         }
     }
@@ -71,32 +71,48 @@ class RegisterActivity : AppCompatActivity() {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    val firebaseUser = auth.currentUser
-                    firebaseUser?.let { user ->
-                        // Actualizar displayName en Firebase User
-                        val profileUpdates = com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                    val user = auth.currentUser
+                    if (user != null) {
+                        val profileUpdates = UserProfileChangeRequest.Builder()
                             .setDisplayName(nombre)
                             .build()
                         user.updateProfile(profileUpdates).addOnCompleteListener {
-                            // Guardar en SharedPref
+                            // Guardar en SharedPreferences
                             SharedPrefManager.getInstance(this)
-                                .saveUser(user.uid, nombre, user.email ?: email)
+                                .saveUser(user.uid, nombre, email)
 
-                            // Crear usuario en backend
-                            val usuario = Usuario(id = user.uid, nombre = nombre, email = user.email ?: email)
+                            // Crear usuario en backend (Neo4j u otro)
+                            val usuario = Usuario(id = user.uid, nombre = nombre, email = email)
                             CoroutineScope(Dispatchers.IO).launch {
                                 try {
                                     RetrofitClient.apiService.crearUsuario(usuario)
                                 } catch (_: Exception) {
-                                    // Ignorar errores
+                                    // Ignorar error backend
                                 }
                             }
 
-                            // Ir a pantalla de Login
-                            Toast.makeText(this, "Registro exitoso. Por favor, inicia sesión.", Toast.LENGTH_LONG).show()
-                            val intent = Intent(this, LoginActivity::class.java)
-                            startActivity(intent)
-                            finish()
+                            // Crear documento en Firestore
+                            val userProfile = hashMapOf(
+                                "name" to nombre,
+                                "total_habits" to 0,
+                                "habits_completed" to 0,
+                                "current_streak" to 0,
+                                "longest_streak" to 0,
+                                "completion_rate" to 0.0
+                            )
+
+                            FirebaseFirestore.getInstance()
+                                .collection("usuarios")
+                                .document(user.uid)
+                                .set(userProfile)
+                                .addOnSuccessListener {
+                                    Toast.makeText(this, "Registro exitoso. Por favor, inicia sesión.", Toast.LENGTH_LONG).show()
+                                    startActivity(Intent(this, LoginActivity::class.java))
+                                    finish()
+                                }
+                                .addOnFailureListener { e ->
+                                    Toast.makeText(this, "Error al guardar usuario: ${e.message}", Toast.LENGTH_LONG).show()
+                                }
                         }
                     }
                 } else {

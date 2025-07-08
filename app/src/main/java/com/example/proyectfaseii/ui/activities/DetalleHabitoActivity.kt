@@ -2,6 +2,7 @@ package com.example.proyectfaseii.ui.activities
 
 import android.os.Bundle
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -24,9 +25,9 @@ class DetalleHabitoActivity : AppCompatActivity() {
     private lateinit var tvHabitPriority: TextView
     private lateinit var tvStreaks: TextView
     private lateinit var lineChart: LineChart
-    private lateinit var btnDelete: Button
-    private lateinit var btnArchive: Button
-    private lateinit var btnEdit: Button
+    private lateinit var btnDelete: ImageButton
+    private lateinit var btnArchive: ImageButton
+    private lateinit var btnEdit: ImageButton
 
     private var habitoId: String? = null
     private lateinit var habito: Habito
