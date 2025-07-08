@@ -1,6 +1,7 @@
 package com.example.proyectfaseii.ui.fragments
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -83,7 +84,14 @@ class TodayFragment : Fragment() {
 
             progressLoading.visibility = View.GONE
             tvEmptyState.visibility = if (habitsToday.isEmpty()) View.VISIBLE else View.GONE
+            Log.d("TodayFragment", "📋 Hábitos obtenidos: ${fetchedHabits.size}")
+            fetchedHabits.forEach {
+                Log.d("TodayFragment", "➡️ ${it.name} - ${it.recurrence} - ${it.time_of_day}")
+            }
+
+
         }
+
     }
 
     private fun marcarComoCompletado(habito: Habito) {

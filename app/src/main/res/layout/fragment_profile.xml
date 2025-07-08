@@ -125,7 +125,7 @@
             android:text="Cerrar sesión"
             android:layout_marginTop="20dp"
             android:textColor="@android:color/white"
-            android:backgroundTint="@color/gmp_ref_palette_red90" />
+            android:backgroundTint="@color/gmp_ref_palette_red_tonal_selected" />
 
     </LinearLayout>
 </ScrollView>

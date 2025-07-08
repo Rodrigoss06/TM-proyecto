@@ -1,19 +1,20 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/today_fragment_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:padding="16dp">
 
-    <!-- Fecha y Selector de Día -->
+    <!-- Header -->
     <LinearLayout
         android:id="@+id/header_calendar"
-        android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="vertical"
         android:layout_marginBottom="12dp">
+
         <TextView
             android:id="@+id/tv_selected_date"
             android:layout_width="wrap_content"
@@ -21,7 +22,6 @@
             android:text="Lunes 1 Julio"
             android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
             android:layout_marginBottom="8dp"/>
-
 
         <TextView
             android:id="@+id/tv_today_title"
@@ -46,39 +46,37 @@
         android:id="@+id/rv_habits_today"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_gravity="center"
-        android:layout_marginTop="12dp"
-        android:layout_marginBottom="8dp"
         android:layout_weight="1"
         android:clipToPadding="false"
         android:paddingBottom="80dp"/>
 
+    <!-- Estado vacío y carga -->
     <ProgressBar
         android:id="@+id/progress_loading"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:layout_marginTop="8dp"
         android:visibility="gone"/>
 
     <TextView
         android:id="@+id/tv_empty_state"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="🎉 No hay hábitos pendientes hoy"
-        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-        android:layout_gravity="center"
+        android:textAlignment="center"
+        android:layout_marginTop="8dp"
         android:visibility="gone"/>
 
-
-    <!-- FAB para nueva acción opcional -->
+    <!-- FAB -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_add_habit"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
+        android:layout_gravity="end"
         android:layout_margin="16dp"
-        android:contentDescription="TODO"
+        android:contentDescription="Agregar hábito"
         app:srcCompat="@drawable/ic_add"
         app:tint="@android:color/white"
-        app:backgroundTint="?attr/colorPrimary" />
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+        app:backgroundTint="?attr/colorPrimary"/>
+</LinearLayout>

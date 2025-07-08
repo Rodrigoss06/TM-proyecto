@@ -166,6 +166,11 @@ class CrearHabitoModal : BottomSheetDialogFragment() {
                 return@setOnClickListener
             }
 
+            if (recurrence == "Daily") {
+                selectedDays.clear()
+                selectedDays.addAll(listOf("mon", "tue", "wed", "thu", "fri", "sat", "sun"))
+            }
+
             val habito = Habito(
                 id = UUID.randomUUID().toString(),
                 name = name,

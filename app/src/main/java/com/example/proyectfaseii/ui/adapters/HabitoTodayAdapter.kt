@@ -1,5 +1,6 @@
 package com.example.proyectfaseii.ui.adapters
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,6 +23,7 @@ class HabitoTodayAdapter(
     }
 
     override fun onBindViewHolder(holder: HabitoViewHolder, position: Int) {
+        Log.d("AdapterToday", "🟢 Pintando hábito: ${habits[position].name}")
         holder.bind(habits[position])
     }
 
@@ -33,6 +35,7 @@ class HabitoTodayAdapter(
         private val btnComplete: ImageView = itemView.findViewById(R.id.btn_complete)
 
         fun bind(habito: Habito) {
+
             tvHabitName.text = habito.name
             tvTimeOfDay.text = habito.time_of_day.joinToString(" / ")
 
@@ -47,6 +50,7 @@ class HabitoTodayAdapter(
                 )
                 onCheckClick(habito)
             }
+
         }
     }
 }
