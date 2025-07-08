@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:padding="16dp">
 
     <LinearLayout
@@ -29,19 +29,20 @@
             android:layout_marginTop="12dp"
             android:textAppearance="?attr/textAppearanceSubtitle1" />
 
-        <!-- Grupo de botones de recurrencia -->
         <com.google.android.material.button.MaterialButtonToggleGroup
             android:id="@+id/group_recurrence"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            >
+            app:singleSelection="true"
+            app:selectionRequired="true">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_daily"
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
+                android:checked="true"
                 android:text="Daily" />
 
             <com.google.android.material.button.MaterialButton

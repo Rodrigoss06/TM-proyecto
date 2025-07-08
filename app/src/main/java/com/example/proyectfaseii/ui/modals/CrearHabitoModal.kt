@@ -10,6 +10,7 @@ import com.example.proyectfaseii.data.models.Area
 import com.example.proyectfaseii.data.models.Goal
 import com.example.proyectfaseii.data.models.Habito
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
@@ -30,10 +31,11 @@ class CrearHabitoModal : BottomSheetDialogFragment() {
     private lateinit var tvDaysLabel: TextView
 
     private lateinit var groupRecurrence: MaterialButtonToggleGroup
-    private lateinit var btnDaily: View
-    private lateinit var btnWeekly: View
-    private lateinit var btnMonthly: View
-    private lateinit var btnYearly: View
+    private lateinit var btnDaily: MaterialButton
+    private lateinit var btnWeekly: MaterialButton
+    private lateinit var btnMonthly: MaterialButton
+    private lateinit var btnYearly: MaterialButton
+
 
     private val reminderList = mutableListOf<String>()
     private val selectedDays = mutableListOf<String>()
@@ -65,6 +67,8 @@ class CrearHabitoModal : BottomSheetDialogFragment() {
         setupDatePickers()
         setupReminderPicker()
         setupSave()
+        btnDaily.isChecked = true
+
     }
 
     private fun setupRecurrenceButtons() {
@@ -142,16 +146,22 @@ class CrearHabitoModal : BottomSheetDialogFragment() {
     private fun setupSave() {
         btnSave.setOnClickListener {
             val name = etName.text.toString().trim()
-            val recurrence = when (groupRecurrence.checkedButtonId) {
-                btnDaily.id -> "Daily"
-                btnWeekly.id -> "Weekly"
-                btnMonthly.id -> "Monthly"
-                btnYearly.id -> "Yearly"
+            val checkedId = groupRecurrence.checkedButtonId
+            Toast.makeText(requireContext(), "id: $checkedId", Toast.LENGTH_SHORT).show()
+
+            val recurrence = when (checkedId) {
+                R.id.btn_daily -> "Daily"
+                R.id.btn_weekly -> "Weekly"
+                R.id.btn_monthly -> "Monthly"
+                R.id.btn_yearly -> "Yearly"
                 else -> ""
             }
-            val startDate = etStartDate.text.toString().trim()
 
-            if (name.isEmpty() || startDate.isEmpty()) {
+            val startDate = etStartDate.text.toString().trim()
+            val endDate = etEndDate.text.toString().trim()
+
+
+            if (name.isEmpty() || recurrence.isEmpty() || startDate.isEmpty()) {
                 Toast.makeText(requireContext(), "Completa los campos obligatorios", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
@@ -161,6 +171,7 @@ class CrearHabitoModal : BottomSheetDialogFragment() {
                 name = name,
                 recurrence = recurrence,
                 start_date = startDate,
+                end_date = endDate,
                 created_date = startDate,
                 remind = reminderList,
                 time_of_day = selectedDays,

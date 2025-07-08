@@ -5,6 +5,7 @@ data class Habito(
     val name: String = "",
     val is_archived: Boolean = false,
     val start_date: String = "", // yyyy-MM-dd
+    val end_date: String? = null, // 🔄 nuevo
     val time_of_day: List<String> = emptyList(), // "mon", "tue", etc.
     val goal: Goal = Goal(),
     val goal_history_items: List<GoalHistoryItem> = emptyList(),
